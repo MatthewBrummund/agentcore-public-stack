@@ -3,12 +3,12 @@
 <!-- IMAGE PLACEHOLDER: Animated GIF or hero banner showing the AgentCore chat interface in action — a user asking a question, the agent streaming a response, and a tool being invoked (e.g., Code Interpreter generating a chart). Dimensions: ~800x400px, optimized for GitHub rendering. -->
 <!-- Example: ![AgentCore Demo](docs/images/hero-demo.gif) -->
 
-<h1>🤖 AgentCore Public Stack</h1>
+<h1><img src="frontend/ai.client/public/img/logo-light.png" alt="AgentCore Logo" height="50" align="center" /> AgentCore Public Stack</h1>
 
 **An open-source, production-ready Generative AI platform for institutions**
 *Built by Boise State University, designed for everyone.*
 
-[![Release](https://img.shields.io/badge/Release-v1.0.0--beta.16-6366f1?style=flat&logo=github&logoColor=white)](RELEASE_NOTES.md)
+[![Release](https://img.shields.io/badge/Release-v1.0.0--beta.17-6366f1?style=flat&logo=github&logoColor=white)](RELEASE_NOTES.md)
 [![Nightly](https://github.com/Boise-State-Development/agentcore-public-stack/actions/workflows/nightly.yml/badge.svg)](https://github.com/Boise-State-Development/agentcore-public-stack/actions/workflows/nightly.yml)
 
 ![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white)
@@ -241,7 +241,7 @@ agentcore-public-stack/
 
 See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the full changelog, including new features, bug fixes, platform upgrades, and deployment notes for each release.
 
-**Current release:** v1.0.0-beta.16
+**Current release:** v1.0.0-beta.17
 
 ---
 
@@ -265,7 +265,7 @@ For commercial licensing inquiries, please contact: [techtransfer@boisestate.edu
 
 <div align="center">
 
-**Built with ❤️ at Boise State University**
+**Built at Boise State University**
 
 [Report a Bug](https://github.com/Boise-State-Development/agentcore-public-stack/issues) · [Request a Feature](https://github.com/Boise-State-Development/agentcore-public-stack/issues) · [Deployment Guide](.github/README-ACTIONS.md)
 

@@ -23,9 +23,9 @@ export const routes: Routes = [
         loadComponent: () => import('./auth/callback/callback.page').then(m => m.CallbackPage),
     },
     {
-        path: 'api-keys',
-        loadComponent: () => import('./auth/api-keys/api-keys.page').then(m => m.ApiKeysPage),
-        canActivate: [authGuard],
+        path: 'connections',
+        redirectTo: 'settings/connections',
+        pathMatch: 'full',
     },
     {
         path: 'admin',
@@ -78,11 +78,6 @@ export const routes: Routes = [
         canActivate: [authGuard],
     },
     {
-        path: 'costs',
-        loadComponent: () => import('./costs/cost-dashboard.page').then(m => m.CostDashboardPage),
-        canActivate: [authGuard],
-    },
-    {
         path: 'memories',
         loadComponent: () => import('./memory/memory-dashboard.page').then(m => m.MemoryDashboardPage),
         canActivate: [authGuard],
@@ -98,13 +93,14 @@ export const routes: Routes = [
         canActivate: [authGuard],
     },
     {
-        path: 'settings/connections',
-        loadComponent: () => import('./settings/connections/connections.page').then(m => m.ConnectionsPage),
-        canActivate: [authGuard],
-    },
-    {
         path: 'settings/oauth/callback',
         loadComponent: () => import('./settings/oauth-callback/oauth-callback.page').then(m => m.OAuthCallbackPage),
+    },
+    {
+        path: 'settings',
+        loadComponent: () => import('./settings/settings.page').then(m => m.SettingsPage),
+        canActivate: [authGuard],
+        loadChildren: () => import('./settings/settings.routes').then(m => m.settingsRoutes),
     },
     {
         path: 'admin/quota',

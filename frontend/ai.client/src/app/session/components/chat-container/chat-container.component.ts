@@ -78,6 +78,7 @@ export class ChatContainerComponent {
   // Optional inputs
   assistant = input<Assistant | null>(null);
   assistantError = input<string | null>(null);
+  isLoadingAssistant = input<boolean>(false);
   isChatLoading = input<boolean>(false);
   isLoadingSession = input<boolean>(false);
   streamingMessageId = input<string | null>(null);
@@ -103,7 +104,9 @@ export class ChatContainerComponent {
   settingsToggled = output<void>();
   assistantClosed = output<void>();
   starterSelected = output<string>();
-  assistantIndicatorClicked = output<void>();
+  assistantNewSession = output<void>();
+  assistantEdit = output<void>();
+  assistantShare = output<void>();
 
   // Computed signals
   protected readonly hasMessages = computed(() => this.messages().length > 0);
@@ -119,6 +122,13 @@ export class ChatContainerComponent {
   protected readonly isSidenavCollapsed = computed(() =>
     this.sidenavService.isCollapsed()
   );
+  protected readonly isAssistantOwner = computed(() => {
+    const a = this.assistant();
+    if (!a) return false;
+    // Backend excludes ownerId from responses for privacy.
+    // isSharedWithMe is true when the assistant belongs to someone else.
+    return !a.isSharedWithMe;
+  });
 
   // Event handlers
   onMessageSubmitted(event: { content: string; timestamp: Date; fileUploadIds?: string[] }) {
@@ -152,7 +162,15 @@ export class ChatContainerComponent {
     this.onMessageSubmitted({ content: starter, timestamp: new Date() });
   }
 
-  onAssistantIndicatorClicked() {
-    this.assistantIndicatorClicked.emit();
+  onAssistantNewSession() {
+    this.assistantNewSession.emit();
+  }
+
+  onAssistantEdit() {
+    this.assistantEdit.emit();
+  }
+
+  onAssistantShare() {
+    this.assistantShare.emit();
   }
 }
