@@ -62,10 +62,10 @@ concurrency:
 jobs:
   check-stack-dependencies:
     name: Check Stack Dependencies
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run stack dependency tests
         run: |
@@ -73,10 +73,10 @@ jobs:
 
   install:
     name: Install Dependencies
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install system dependencies
         run: |
@@ -87,21 +87,21 @@ jobs:
           bash scripts/stack-sagemaker-fine-tuning/install.sh
 
       - name: Save node_modules cache
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: infrastructure/node_modules
           key: infrastructure-node-modules-${{ hashFiles('infrastructure/package-lock.json') }}
 
   build:
     name: Build CDK Code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [install, check-stack-dependencies]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Restore node_modules cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: infrastructure/node_modules
           key: infrastructure-node-modules-${{ hashFiles('infrastructure/package-lock.json') }}
@@ -111,7 +111,7 @@ jobs:
           bash scripts/stack-sagemaker-fine-tuning/build-cdk.sh
 
       - name: Save build artifacts cache
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             infrastructure/lib/**/*.js
@@ -122,8 +122,10 @@ jobs:
 
   synth:
     name: Synthesize CloudFormation Template
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
 
     # Select environment based on trigger
     # Manual: workflow_dispatch input
@@ -149,17 +151,29 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
+      - name: Check if fine-tuning is enabled
+        id: check
+        run: |
+          if [ "${{ vars.CDK_FINE_TUNING_ENABLED }}" = "true" ] || [ "${{ vars.CDK_FINE_TUNING_ENABLED }}" = "1" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "SageMaker Fine-Tuning is disabled — skipping synth"
+          fi
       - name: Checkout code
-        uses: actions/checkout@v5
+        if: steps.check.outputs.enabled == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Restore node_modules cache
-        uses: actions/cache/restore@v5
+        if: steps.check.outputs.enabled == 'true'
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: infrastructure/node_modules
           key: infrastructure-node-modules-${{ hashFiles('infrastructure/package-lock.json') }}
 
       - name: Restore build artifacts
-        uses: actions/cache/restore@v5
+        if: steps.check.outputs.enabled == 'true'
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             infrastructure/lib/**/*.js
@@ -169,6 +183,7 @@ jobs:
           key: infrastructure-build-${{ github.sha }}
 
       - name: Configure AWS credentials
+        if: steps.check.outputs.enabled == 'true'
         uses: ./.github/actions/configure-aws-credentials
         with:
           aws-region: ${{ env.CDK_AWS_REGION }}
@@ -178,15 +193,18 @@ jobs:
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
 
       - name: Install system dependencies
+        if: steps.check.outputs.enabled == 'true'
         run: |
           bash scripts/common/install-deps.sh
 
       - name: Synthesize CloudFormation template
+        if: steps.check.outputs.enabled == 'true'
         run: |
           bash scripts/stack-sagemaker-fine-tuning/synth.sh
 
       - name: Upload synthesized templates
-        uses: actions/upload-artifact@v6
+        if: steps.check.outputs.enabled == 'true'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: sagemaker-fine-tuning-cdk-synth
           path: infrastructure/cdk.out/
@@ -194,9 +212,9 @@ jobs:
 
   test:
     name: Validate CloudFormation Template
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: synth
-    if: ${{ github.event.inputs.skip_tests != 'true' }}
+    if: ${{ needs.synth.outputs.enabled == 'true' && github.event.inputs.skip_tests != 'true' }}
 
     # Select environment based on trigger
     # Manual: workflow_dispatch input
@@ -223,16 +241,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Restore node_modules cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: infrastructure/node_modules
           key: infrastructure-node-modules-${{ hashFiles('infrastructure/package-lock.json') }}
 
       - name: Restore build artifacts
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             infrastructure/lib/**/*.js
@@ -242,7 +260,7 @@ jobs:
           key: infrastructure-build-${{ github.sha }}
 
       - name: Download synthesized templates
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: sagemaker-fine-tuning-cdk-synth
           path: infrastructure/cdk.out/
@@ -267,10 +285,11 @@ jobs:
 
   deploy:
     name: Deploy SageMaker Fine-Tuning Stack
-    runs-on: ubuntu-latest
-    needs: test
+    runs-on: ubuntu-24.04
+    needs: [synth, test]
     if: |
       always() && !cancelled() &&
+      needs.synth.outputs.enabled == 'true' &&
       !contains(needs.*.result, 'failure') &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.event_name != 'workflow_dispatch' || github.event.inputs.skip_deploy != 'true')
@@ -301,16 +320,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Restore node_modules cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: infrastructure/node_modules
           key: infrastructure-node-modules-${{ hashFiles('infrastructure/package-lock.json') }}
 
       - name: Restore build artifacts
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: |
             infrastructure/lib/**/*.js
@@ -320,7 +339,7 @@ jobs:
           key: infrastructure-build-${{ github.sha }}
 
       - name: Download synthesized templates
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: sagemaker-fine-tuning-cdk-synth
           path: infrastructure/cdk.out/
@@ -343,7 +362,7 @@ jobs:
           bash scripts/stack-sagemaker-fine-tuning/deploy.sh
 
       - name: Upload stack outputs
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: sagemaker-fine-tuning-deployment-outputs
