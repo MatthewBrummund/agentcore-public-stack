@@ -18,7 +18,7 @@ import {
   heroArrowLeft,
   heroChatBubbleLeftRight,
   heroEllipsisVertical,
-  heroShare,
+  heroAdjustmentsHorizontal,
   heroClipboard,
 } from '@ng-icons/heroicons/outline';
 import { SessionService, BulkDeleteSessionResult } from '../session/services/session/session.service';
@@ -49,7 +49,7 @@ const MAX_SELECTION = 20;
       heroArrowLeft,
       heroChatBubbleLeftRight,
       heroEllipsisVertical,
-      heroShare,
+      heroAdjustmentsHorizontal,
       heroClipboard,
     }),
   ],
@@ -223,7 +223,7 @@ const MAX_SELECTION = 20;
                           class="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-600"
                           role="menuitem"
                         >
-                          <ng-icon name="heroShare" class="size-4" />
+                          <ng-icon name="heroAdjustmentsHorizontal" class="size-4" />
                           Manage Shared Instances
                         </button>
                         <button
@@ -305,7 +305,7 @@ export class ManageSessionsPage implements OnInit {
   readonly isAtSelectionLimit = computed(() => this.selectedCount() >= this.maxSelection);
 
   /** Whether there are more sessions to load */
-  readonly hasMoreSessions = computed(() => this.nextToken() !== null);
+  readonly hasMoreSessions = computed(() => !!this.nextToken());
 
   /** Close menu when clicking outside */
   @HostListener('document:click', ['$event'])
@@ -386,7 +386,7 @@ export class ManageSessionsPage implements OnInit {
     const dialogRef = this.dialog.open<boolean>(ConfirmationDialogComponent, {
       data: {
         title: 'Delete Conversation',
-        message: `Are you sure you want to delete "${session.title || 'Untitled Conversation'}"? This action cannot be undone. Your usage data will be preserved for billing purposes.`,
+        message: `Are you sure you want to delete "${session.title || 'Untitled Conversation'}"? This action cannot be undone. Your usage data will be preserved for billing purposes. Any shared links to this conversation will stop working.`,
         confirmText: 'Delete',
         cancelText: 'Cancel',
         destructive: true,
@@ -461,7 +461,7 @@ export class ManageSessionsPage implements OnInit {
     const dialogRef = this.dialog.open<boolean>(ConfirmationDialogComponent, {
       data: {
         title: `Delete ${count} Conversation${count === 1 ? '' : 's'}`,
-        message: `Are you sure you want to delete ${count} conversation${count === 1 ? '' : 's'}? This action cannot be undone. Your usage data will be preserved for billing purposes.`,
+        message: `Are you sure you want to delete ${count} conversation${count === 1 ? '' : 's'}? This action cannot be undone. Your usage data will be preserved for billing purposes. Any shared links to these conversations will stop working.`,
         confirmText: 'Delete',
         cancelText: 'Cancel',
         destructive: true,

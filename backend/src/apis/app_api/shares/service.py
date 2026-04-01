@@ -4,7 +4,6 @@ Business logic for creating, retrieving, updating, and revoking
 conversation share snapshots.  Supports multiple shares per session.
 """
 
-import json
 import logging
 import os
 import re
@@ -197,6 +196,44 @@ class ShareService:
         self._table.delete_item(Key={"share_id": item["share_id"]})
         logger.info(f"Revoked share {item['share_id']}")
 
+    async def delete_shares_for_session(self, session_id: str) -> int:
+        """Delete all share snapshots for a session.
+
+        Called as a background task when the session owner deletes a conversation.
+        Removes share records so that existing share links stop working.
+        Exported conversations (copied into recipients' own sessions) are unaffected.
+
+        Returns:
+            Number of shares deleted.
+        """
+        if not self._enabled:
+            logger.debug("ShareService disabled - skipping share cleanup")
+            return 0
+
+        try:
+            items = self._find_shares_by_session(session_id)
+            if not items:
+                return 0
+
+            # Batch delete all shares for this session
+            with self._table.batch_writer() as batch:
+                for item in items:
+                    batch.delete_item(Key={"share_id": item["share_id"]})
+
+            logger.info(
+                f"Deleted {len(items)} share(s) for session "
+                f"{self._sanitize_id(session_id)}"
+            )
+            return len(items)
+
+        except Exception:
+            logger.error(
+                "Failed to delete shares for session "
+                f"{self._sanitize_id(session_id)}",
+                exc_info=True,
+            )
+            return 0
+
     async def get_shares_for_session(self, session_id: str, user_id: str) -> ShareListResponse:
         """Return all shares for a session owned by the user."""
         self._ensure_enabled()
@@ -280,8 +317,8 @@ class ShareService:
     ) -> int:
         """Write snapshot messages into AgentCore Memory for a new session.
 
-        Converts each MessageResponse dict back to Bedrock Converse format
-        and appends it via AgentCoreMemorySessionManager.
+        Converts each MessageResponse dict to SessionMessage format and
+        persists via create_message to the "default" namespace.
 
         Returns:
             Number of messages successfully written.
@@ -298,6 +335,7 @@ class ShareService:
             from bedrock_agentcore.memory.integrations.strands.session_manager import (
                 AgentCoreMemorySessionManager,
             )
+            from strands.types.session import SessionMessage
         except ImportError:
             logger.error("AgentCore Memory SDK not available — cannot copy messages")
             return 0
@@ -319,15 +357,18 @@ class ShareService:
         )
 
         count = 0
-        for msg_dict in snapshot_messages:
+        for idx, msg_dict in enumerate(snapshot_messages):
             converse_msg = self._snapshot_msg_to_converse(msg_dict)
             if converse_msg is None:
                 continue
             try:
-                await asyncio.to_thread(mgr.append_message, converse_msg, None)
+                # Create SessionMessage with proper index for ordering
+                session_msg = SessionMessage.from_message(converse_msg, index=idx)
+                # Use create_message with "default" namespace (same as list_messages uses)
+                await asyncio.to_thread(mgr.create_message, session_id, "default", session_msg)
                 count += 1
             except Exception as e:
-                logger.warning(f"Failed to copy message {count}: {e}")
+                logger.warning(f"Failed to copy message {idx}: {e}")
 
         logger.info(f"Copied {count}/{len(snapshot_messages)} messages to AgentCore Memory")
         return count

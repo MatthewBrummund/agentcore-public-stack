@@ -4,11 +4,9 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as logs from "aws-cdk-lib/aws-logs";
-import * as kms from "aws-cdk-lib/aws-kms";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import * as sns from "aws-cdk-lib/aws-sns";
@@ -72,7 +70,7 @@ export class AppApiStack extends cdk.Stack {
 
     // Import ALB
     const albArn = ssm.StringParameter.valueForStringParameter(this, `/${config.projectPrefix}/network/alb-arn`);
-    const alb = elbv2.ApplicationLoadBalancer.fromApplicationLoadBalancerAttributes(this, "ImportedAlb", {
+    const _alb = elbv2.ApplicationLoadBalancer.fromApplicationLoadBalancerAttributes(this, "ImportedAlb", {
       loadBalancerArn: albArn,
       securityGroupId: albSecurityGroupId,
     });
@@ -1022,6 +1020,7 @@ export class AppApiStack extends cdk.Stack {
       container.addEnvironment('SAGEMAKER_EXECUTION_ROLE_ARN', sagemakerRoleArn);
       container.addEnvironment('SAGEMAKER_SECURITY_GROUP_ID', sagemakerSgId);
       container.addEnvironment('SAGEMAKER_SUBNET_IDS', ftPrivateSubnetIds);
+      container.addEnvironment('FINE_TUNING_DEFAULT_QUOTA_HOURS', String(config.fineTuning.defaultQuotaHours));
 
       // Grant ECS task role: DynamoDB access to fine-tuning tables
       taskDefinition.taskRole.addToPrincipalPolicy(
